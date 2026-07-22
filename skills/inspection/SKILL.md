@@ -1,9 +1,8 @@
 ---
-name: inspect
+name: inspection
 description: "Use when inspecting or processing scientific data stores and data cubes. Covers format discovery, metadata inspection, dimensions and coordinates, lazy loading, chunking strategies, safe subsetting, and common operations; do not assume fixed dimension names."
 license: MIT
 metadata:
-  hermes:
     tags: [data-inspection, zarr, xarray, chunked-arrays, data-cubes, lazy-loading]
     related_skills: []
 ---
@@ -31,15 +30,6 @@ point for Zarr inspection is `xr.open_zarr()`.
     store, not a separate data format. Inspect its root `zarr_format` and `.zattrs`
     before opening the store. A store with `zarr_format: 2` is Zarr v2 even when
     the store contains many variables and groups.
-
-## Installation
-
-```bash
-source /net/home/jpeters/.virtualenvs/oasis_agent/bin/activate
-python -m pip install xarray zarr dask
-# Optional: netcdf4 for NetCDF files
-# Run the commands below with this environment activated.
-```
 
 ## Opening a Zarr Store
 

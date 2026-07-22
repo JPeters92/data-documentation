@@ -23,8 +23,8 @@ their group in the generated TOML.
 
 | Skill | Purpose |
 |---|---|
-| `dataset-documentation` | Main workflow for server access, dataset discovery, lazy inspection, TOML generation, validation, and change logging. |
-| `inspect` | Safe inspection and processing of scientific data stores and cubes, including Zarr with xarray, arbitrary dimensions, and lazy loading. |
+| `documentation` | Main workflow for server access, dataset discovery, lazy inspection, TOML generation, validation, and change logging. |
+| `inspection` | Safe inspection and processing of scientific data stores and cubes, including Zarr with xarray, arbitrary dimensions, and lazy loading. |
 
 ## Repository Structure
 
@@ -33,9 +33,25 @@ README.md
 src/
 └── document_dataset.py
 skills/
-├── dataset-documentation/SKILL.md
-└── inspect/SKILL.md
+├── documentation/SKILL.md
+└── inspection/SKILL.md
 ```
+
+## Environment Setup
+
+Create and activate the dedicated environment used by the documentation and
+inspection workflows:
+
+```bash
+INSPECTION_VENV="${INSPECTION_VENV:-$HOME/.virtualenvs/oasis_inspection}"
+python3 -m venv "$INSPECTION_VENV"
+source "$INSPECTION_VENV/bin/activate"
+python -m pip install --upgrade pip
+python -m pip install xarray zarr dask
+# Optional: netcdf4 for NetCDF files
+```
+
+Keep the environment activated while running the commands below.
 
 ## Documentation Tool POC
 
@@ -50,7 +66,7 @@ cannot open.
 Run it on `phaestos` with the configured environment:
 
 ```bash
-/net/home/jpeters/.virtualenvs/oasis_agent/bin/python \
+python \
     src/document_dataset.py \
     --proposal \
     --zarr-store data_from_mpi/ERA5Data.zarr \

@@ -1,10 +1,10 @@
 ---
-name: dataset-documentation
+name: documentation
 description: "Use when inspecting datasets under /net/data on the phaestos cluster, bootstrapping missing README.toml files, or creating and enriching dataset documentation. Detects common cube formats, extracts verifiable metadata, preserves the required TOML schema, and logs each documented change."
 license: MIT
 metadata:
-  tags: [phaestos, dataset-documentation, toml, zarr, netcdf, geospatial-data, metadata]
-  related_skills: [inspect]
+  tags: [phaestos, documentation, toml, zarr, netcdf, geospatial-data, metadata]
+  related_skills: [inspection]
 ---
 
 # Phaestos Dataset Documentation
