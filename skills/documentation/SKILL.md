@@ -18,8 +18,9 @@ from the dataset, its embedded metadata, or accompanying documents.
 
 ## Scope and access
 
-- Use a user-created virtual environment for Python inspection and validation.
-  The environment should contain `xarray`, `zarr`, and `dask` for cube inspection.
+- Use Python 3.12 or newer in a user-created virtual environment for Python
+  inspection and validation. The environment should contain `xarray`, `zarr`,
+  and `dask` for cube inspection.
 - Keep project Python source under `src/`; do not create separate root-level
   validation or ad-hoc analysis scripts. Run focused checks inline with the
   canonical interpreter or add reusable implementation code under `src/`.
@@ -66,6 +67,22 @@ from the dataset, its embedded metadata, or accompanying documents.
 Every document must contain these four sections. Do not remove, rename, or
 change the required keys in `[general]`.
 
+The repository's `src/document_dataset.py` produces a temporary proposal with
+the required sections and these evidence fields:
+
+- `[general].keywords` contains meaningful filename-derived terms when they
+  can be supported; otherwise it remains empty.
+- `[details].formats` contains recognized data formats such as `Zarr`,
+  `NetCDF`, `GeoTIFF`, `HDF5`, `Parquet`, or `CSV`.
+- `[details].filename_evidence` stores representative filename patterns and
+  token evidence for review before publication.
+- `--max-depth` is optional. Discovery is recursive without a depth limit by
+  default; pass an integer only when a bounded traversal is required.
+
+Treat these values as evidence for review, not as a replacement for reading
+source documentation and representative data metadata. Do not publish raw
+coordinates, timestamps, version fragments, or generic filename tokens as
+scientific keywords unless their meaning is verified.
 ```toml
 [general]
 name = "TODO"
@@ -166,7 +183,8 @@ cd <dataset> && find . -type d \( -name "*.zarr" -o -name "*.zarr.zip" \) -prune
 cd <dataset> && find . -type f \( -name ".zgroup" -o -name "zarr.json" \) -print
 
 # Find representative non-Zarr products and supporting documents recursively,
-# but keep the traversal bounded. The tool uses the same bounded-depth rule.
+# and do not enter Zarr chunk trees. The tool recurses without a depth limit by
+# default; use an explicit limit only when required.
 cd <dataset> && find . -type f \( -iname "*.nc" -o -iname "*.nc4" -o -iname "*.tif" -o -iname "*.tiff" -o -iname "*.h5" -o -iname "*.hdf5" -o -iname "*.csv" -o -iname "*.parquet" -o -iname "README*" -o -iname "LICENSE*" -o -iname "CITATION*" \) -print
 ```
 

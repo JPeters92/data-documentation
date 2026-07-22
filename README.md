@@ -39,29 +39,28 @@ skills/
 
 ## Environment Setup
 
-Create and activate the dedicated environment used by the documentation and
-inspection workflows:
+Use Python 3.12 or newer. Create and activate a dedicated virtual environment
+for the documentation and inspection workflows:
 
 ```bash
-INSPECTION_VENV="${INSPECTION_VENV:-$HOME/.virtualenvs/oasis_inspection}"
-python3 -m venv "$INSPECTION_VENV"
-source "$INSPECTION_VENV/bin/activate"
+python3 --version  # must be Python 3.12 or newer
+python3 -m venv .venv
+source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install xarray zarr dask
 # Optional: netcdf4 for NetCDF files
 ```
 
-Keep the environment activated while running the commands below.
+Keep `.venv` activated while running the commands below. The environment is
+local to the user and can be replaced with another environment path if needed.
 
 ## Documentation Tool POC
 
-`src/document_dataset.py` is the first read-only implementation of the
-documentation workflow. It inventories the dataset root and immediate product
-directories, samples supporting CSV files, and inspects at most three Zarr
-stores by default. Zarr stores are pruned during discovery so chunk trees are
-not traversed. Xarray is used for lazy inspection when possible; consolidated
-Zarr JSON metadata is used as a fallback for stores that the current backend
-cannot open.
+`src/document_dataset.py` is a read-only evidence collector. It recursively
+inventories the dataset, samples supporting CSV files, and inspects at most
+three representative Zarr stores by default. Zarr stores are pruned during
+discovery so chunk trees are not traversed. Xarray is used for lazy inspection
+when possible; consolidated Zarr JSON metadata is used as a fallback.
 
 Run it with the configured environment:
 
@@ -82,6 +81,12 @@ JSON report is evidence for review; the tool never replaces an existing
 dataset `README.toml`. Keep the final README compact by publishing concise
 collection-level metadata rather than per-store paths, full variable dumps, or
 detailed inspection traces.
+
+Discovery recurses through nested directories to arbitrary depth by default.
+Use `--max-depth N` only when an explicit traversal limit is needed. Repeated
+filename tokens are retained as `filename_evidence` and used for meaningful
+`[general].keywords`; format names such as `Zarr`, `NetCDF`, `GeoTIFF`, and
+`HDF5` are inferred from discovered data files.
 
 ## TOML Contract
 
