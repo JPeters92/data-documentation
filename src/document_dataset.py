@@ -330,8 +330,8 @@ def main() -> int:
     parser.add_argument(
         "--max-depth",
         type=int,
-        default=None,
-        help="Optional directory-depth limit; recurse to all depths by default",
+        default=50,
+        help="Directory-depth limit (default: 50)",
     )
     parser.add_argument(
         "--zarr-store",
