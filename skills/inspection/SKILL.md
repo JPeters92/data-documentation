@@ -169,34 +169,6 @@ weights.name = 'weights'
 global_mean = ds['variable'].weighted(weights).mean(dim=('lat', 'lon'))
 ```
 
-### Monthly climatology
-
-```python
-climatology = ds['variable'].groupby('time.month').mean(dim='time')
-```
-
-### Anomaly from climatology
-
-```python
-clim = ds['variable'].groupby('time.month').mean('time')
-anomaly = ds['variable'].groupby('time.month') - clim
-```
-
-### Linear trend across time
-
-```python
-from scipy import stats
-
-# Convert time to numeric years
-td = ds.time.values.astype('datetime64[D]').astype(float) / 365.25
-td -= td[0]
-
-slope, intercept, r_value, p_value, std_err = stats.linregress(
-    td, global_mean.values
-)
-print(f"Trend: {slope*10:+.3f} per decade, p={p_value:.2e}")
-```
-
 ## Common Pitfalls
 
 1. **Memory exhaustion** — Always subset before `.compute()`. Estimate size from the actual dimension sizes and dtype; do not assume a `(time, lat, lon)` layout.
