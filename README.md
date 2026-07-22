@@ -24,8 +24,7 @@ their group in the generated TOML.
 | Skill | Purpose |
 |---|---|
 | `dataset-documentation` | Main workflow for server access, dataset discovery, lazy inspection, TOML generation, validation, and change logging. |
-| `xarray-zarr` | Safe inspection and processing of flat or hierarchical Zarr stores with xarray, including arbitrary dimensions and lazy loading. |
-| `json-incremental-read` | Targeted inspection of large JSON and Zarr metadata using `jq` without loading complete metadata files into context. |
+| `inspect` | Safe inspection and processing of scientific data stores and cubes, including Zarr with xarray, arbitrary dimensions, and lazy loading. |
 
 ## Repository Structure
 
@@ -35,8 +34,7 @@ src/
 └── document_dataset.py
 skills/
 ├── dataset-documentation/SKILL.md
-├── xarray-zarr/SKILL.md
-└── json-incremental-read/SKILL.md
+└── inspect/SKILL.md
 ```
 
 ## Documentation Tool POC

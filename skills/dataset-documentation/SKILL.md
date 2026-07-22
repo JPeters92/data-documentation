@@ -4,7 +4,7 @@ description: "Use when inspecting datasets under /net/data on the phaestos clust
 license: MIT
 metadata:
   tags: [phaestos, dataset-documentation, toml, zarr, netcdf, geospatial-data, metadata]
-  related_skills: [xarray-zarr, json-incremental-read]
+  related_skills: [inspect]
 ---
 
 # Phaestos Dataset Documentation

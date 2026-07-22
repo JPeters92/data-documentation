@@ -1,18 +1,22 @@
 ---
-name: xarray-zarr
-description: "Use when reading, inspecting, or processing Zarr data stores with xarray. Covers dimension and coordinate discovery, lazy loading, chunking strategies, safe subsetting, and common operations on arbitrary chunked array data; do not assume lat/lon/time dimension names."
+name: inspect
+description: "Use when inspecting or processing scientific data stores and data cubes. Covers format discovery, metadata inspection, dimensions and coordinates, lazy loading, chunking strategies, safe subsetting, and common operations; do not assume fixed dimension names."
 license: MIT
 metadata:
   hermes:
-    tags: [zarr, xarray, chunked-arrays, data-cubes, lazy-loading]
+    tags: [data-inspection, zarr, xarray, chunked-arrays, data-cubes, lazy-loading]
     related_skills: []
 ---
 
-# Reading Zarr Stores with Xarray
+# Scientific Data Inspection with Xarray
 
 ## Overview
 
-Zarr is a format for chunked, compressed, N-dimensional arrays. Xarray provides labeled wrappers (Dataset, DataArray) with a Zarr backend, enabling lazy reading of terabyte-scale arrays. The primary entry point is `xr.open_zarr()`.
+This skill focuses on inspecting chunked scientific data, especially Zarr
+stores with Xarray. Zarr is a format for chunked, compressed, N-dimensional
+arrays. Xarray provides labeled wrappers (Dataset, DataArray) with a Zarr
+backend, enabling lazy reading of terabyte-scale arrays. The primary entry
+point for Zarr inspection is `xr.open_zarr()`.
 
 **Key API reference:** https://docs.xarray.dev/en/stable/generated/xarray.open_zarr.html
 
