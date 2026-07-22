@@ -1,27 +1,25 @@
 ---
 name: documentation
-description: "Use when inspecting datasets under /net/data on the phaestos cluster, bootstrapping missing README.toml files, or creating and enriching dataset documentation. Detects common cube formats, extracts verifiable metadata, preserves the required TOML schema, and logs each documented change."
+description: "Use when inspecting datasets, bootstrapping missing README.toml files, or creating and enriching dataset documentation. Detects common formats, extracts verifiable metadata, preserves the required TOML schema, and logs each documented change."
 license: MIT
 metadata:
-  tags: [phaestos, documentation, toml, zarr, netcdf, geospatial-data, metadata]
+  tags: [documentation, toml, zarr, netcdf, geospatial-data, metadata]
   related_skills: [inspection]
 ---
 
-# Phaestos Dataset Documentation
+# Dataset Documentation
 
 ## Purpose
 
 Create or enrich the machine-readable `README.toml` at the top level of
-datasets below `/net/data` on the `phaestos` cluster. The file feeds an
-automatic documentation system. Base every value on information that can be
-verified from the dataset, its embedded metadata, or accompanying documents.
+datasets in a user-provided data directory. The file feeds an automatic
+documentation system. Base every value on information that can be verified
+from the dataset, its embedded metadata, or accompanying documents.
 
 ## Scope and access
 
-- Run directly on the `phaestos` host; do not SSH back into `phaestos`.
-- Use `/net/home/jpeters/.virtualenvs/oasis_agent/bin/python` for Python
-  inspection and validation. The environment provides Python 3.12 and should
-  contain `xarray`, `zarr`, and `dask` for cube inspection.
+- Use a user-created virtual environment for Python inspection and validation.
+  The environment should contain `xarray`, `zarr`, and `dask` for cube inspection.
 - Keep project Python source under `src/`; do not create separate root-level
   validation or ad-hoc analysis scripts. Run focused checks inline with the
   canonical interpreter or add reusable implementation code under `src/`.
@@ -34,23 +32,21 @@ verified from the dataset, its embedded metadata, or accompanying documents.
   metadata as needed. Still avoid materializing complete cubes or making
   needless repeated reads of large binary data.
 - Treat the top-level README as an audit target as well as an output file.
-  For a batch quality pass, parse every immediate `/net/data/*/README.toml`,
+  For a batch quality pass, parse every immediate `<root>/*/README.toml`,
   identify descriptions containing generated phrases such as `no detected data
   files`, `file_count`, `store_count`, or bare file totals, and inspect those
   dataset roots before editing. A file count is inventory evidence, not a
   scientific description.
-- Use the published Data overview at
-  `https://readme.hpc.rsc4earth.intern.uni-leipzig.de/` to identify dataset
-  directories whose overview entry is `MISSING`, then verify the filesystem
-  before acting because the page may lag behind recent README updates.
-- If `/net/data/<dataset>/README.toml` is absent, copy the canonical
-  `/net/data/README-template.toml` into that dataset directory with the exact
+- Use any available dataset index or inventory to identify missing documents,
+  then verify the filesystem before acting because indexes may be stale.
+- If `<dataset>/README.toml` is absent, copy a user-selected template into that
+  dataset directory with the exact
   name `README.toml` before filling metadata in that copied file. Do not
   replace this copy with a separately generated file. Never overwrite an existing
   `README.toml`, even when it is incomplete; read it first and preserve its
   values.
 - For a batch request covering all datasets, inspect only the immediate child
-  directories of `/net/data` and classify each top-level `README.toml` as
+  directories of the selected root and classify each top-level `README.toml` as
   missing, empty, or non-empty. Process only missing or empty files. A
   non-empty template containing `TODO` placeholders is still an existing file
   and must not be replaced unless the user explicitly requests enrichment.
@@ -106,13 +102,13 @@ the local file is absent. For each candidate, check only the dataset's top
 directory:
 
 ```bash
-test -f /net/data/<dataset>/README.toml
+test -f <dataset>/README.toml
 ```
 
 If the check fails, create the dataset-level file from the shared template:
 
 ```bash
-cp /net/data/README-template.toml /net/data/<dataset>/README.toml
+cp <root>/README-template.toml <dataset>/README.toml
 ```
 
 After copying, fill that exact template-derived file in place. Preserve its
@@ -135,7 +131,7 @@ existing file, including a non-empty template:
 from pathlib import Path
 import shutil
 
-root = Path("/net/data")
+root = Path("/path/to/data-root")
 template = root / "README-template.toml"
 for dataset in sorted(path for path in root.iterdir() if path.is_dir()):
   target = dataset / "README.toml"
@@ -147,31 +143,31 @@ for dataset in sorted(path for path in root.iterdir() if path.is_dir()):
   print(target)
 ```
 
-Run this only with the canonical `oasis_agent` Python interpreter. The empty
-file case is the only existing-file case that may be replaced; parseable or
+Run this with the user's activated virtual environment. The empty file case is
+the only existing-file case that may be replaced; parseable or
 non-empty documents must remain untouched.
 
 ### 1. Discover, without modifying
 
 For a requested dataset, inspect the current documentation and map its nested
 layout before opening any data. The dataset-level `README.toml` belongs at
-`/net/data/<dataset>/README.toml`; do not add README files beside individual
+`<dataset>/README.toml`; do not add README files beside individual
 cubes unless explicitly requested.
 
 ```bash
-cd /net/data/<dataset> && pwd && test -f README.toml && sed -n "1,240p" README.toml || true
+cd <dataset> && pwd && test -f README.toml && sed -n "1,240p" README.toml || true
 
 # Find data containers recursively, but prune containers so chunk files are not traversed.
-cd /net/data/<dataset> && find . -type d \( -name "*.zarr" -o -name "*.zarr.zip" \) -prune -print
+cd <dataset> && find . -type d \( -name "*.zarr" -o -name "*.zarr.zip" \) -prune -print
 
 # Discover Zarr hierarchy markers without traversing array chunks. A `.zmetadata`
 # file is consolidated Zarr metadata; inspect its `zarr_format` and root
 # attributes before using xarray.
-cd /net/data/<dataset> && find . -type f \( -name ".zgroup" -o -name "zarr.json" \) -print
+cd <dataset> && find . -type f \( -name ".zgroup" -o -name "zarr.json" \) -print
 
 # Find representative non-Zarr products and supporting documents recursively,
 # but keep the traversal bounded. The tool uses the same bounded-depth rule.
-cd /net/data/<dataset> && find . -maxdepth 8 -type f \( -iname "*.nc" -o -iname "*.nc4" -o -iname "*.tif" -o -iname "*.tiff" -o -iname "*.h5" -o -iname "*.hdf5" -o -iname "*.csv" -o -iname "*.parquet" -o -iname "README*" -o -iname "LICENSE*" -o -iname "CITATION*" \) -print | head -n 300
+cd <dataset> && find . -type f \( -iname "*.nc" -o -iname "*.nc4" -o -iname "*.tif" -o -iname "*.tiff" -o -iname "*.h5" -o -iname "*.hdf5" -o -iname "*.csv" -o -iname "*.parquet" -o -iname "README*" -o -iname "LICENSE*" -o -iname "CITATION*" \) -print
 ```
 
 Look first for supporting sources such as `README*`, `ReadMe*`, `LICENSE*`,
@@ -201,7 +197,7 @@ than definitive product names: a directory such as `glo90` must be checked
 against the actual `Copernicus_DSM_COG_30_*_DEM.tif` names and raster metadata.
 
 Do not rely only on a shallow listing or a narrow extension allowlist. Traverse
-ordinary nested product directories to a bounded depth (normally 8), while
+ordinary nested product directories to arbitrary depth by default, while
 pruning `.zarr` stores and obvious chunk trees. Recognize scientific files and
 archives by both extension and filename pattern. If the root contains only
 archives or uncommon formats, inspect archive names and one safe header or
@@ -283,8 +279,8 @@ mark the missing information in the log.
 
 ### 3. Inspect cubes lazily and minimally
 
-For Xarray-compatible cubes, use a small Python program with the configured
-oasis_agent interpreter. It must first
+For Xarray-compatible cubes, use a small Python program with the user's
+activated virtual environment. It must first
 analyze the actual store and its groups, then use that analysis as the input to
 TOML generation. It must print metadata, not materialize the data:
 
@@ -293,7 +289,7 @@ import json
 from pathlib import Path
 import xarray as xr
 
-store = Path("/net/data/<dataset>/<cube>.zarr")
+store = Path("<dataset>/<cube>.zarr")
 
 # Zarr v2 groups use .zgroup; Zarr v3 groups use zarr.json.
 # The root is inspected separately from discovered child groups.
@@ -439,10 +435,10 @@ doi = "10.xxxx/example"
 
 ### 5. Validate and log
 
-Before and after every edit, validate the exact file locally on `phaestos`:
+Before and after every edit, validate the exact file locally:
 
 ```bash
-/net/home/jpeters/.virtualenvs/oasis_agent/bin/python -c "import sys, tomllib; tomllib.load(open(sys.argv[1], \"rb\")); print(\"valid TOML\")" /net/data/<dataset>/README.toml
+python -c "import sys, tomllib; tomllib.load(open(sys.argv[1], \"rb\")); print(\"valid TOML\")" <dataset>/README.toml
 ```
 
 If and only if the document changed, append exactly one `[[log]]` record for

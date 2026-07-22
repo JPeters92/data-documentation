@@ -7,6 +7,7 @@ import argparse
 import csv
 import json
 import os
+import re
 import sys
 import tempfile
 from datetime import date
@@ -44,12 +45,18 @@ FORMAT_NAMES = {
     "zarr": "Zarr",
 }
 
+TOKEN_PATTERN = re.compile(r"[A-Za-z][A-Za-z0-9]*(?:[-_][A-Za-z0-9]+)*")
+GENERIC_TOKENS = {
+    "data", "dataset", "file", "files", "readme", "metadata", "version",
+    "final", "latest", "copy", "temp", "tmp",
+}
+
 
 def discover_files(
     dataset: Path,
     max_zarr_stores: int,
     explicit_stores: list[Path] | None = None,
-    max_depth: int = 8,
+    max_depth: int | None = None,
 ) -> dict[str, list[str]]:
     products: list[str] = []
     metadata: list[str] = []
@@ -82,7 +89,7 @@ def discover_files(
                 marker_path = store_path / marker
                 if marker_path.exists():
                     metadata.append(str(marker_path.relative_to(dataset)))
-        if depth >= max_depth:
+        if max_depth is not None and depth >= max_depth:
             directories.clear()
         for name in filenames:
             path = root_path / name
@@ -98,7 +105,7 @@ def discover_files(
     }
 
 
-def discover_source_documents(dataset: Path, max_depth: int = 3) -> list[Path]:
+def discover_source_documents(dataset: Path, max_depth: int | None = None) -> list[Path]:
     """Find small documentation files without entering array chunk trees."""
     documents: list[Path] = []
     names = {"README", "README.md", "ReadMe.md", "README.toml", "CITATION.md"}
@@ -108,7 +115,7 @@ def discover_source_documents(dataset: Path, max_depth: int = 3) -> list[Path]:
             name for name in directories
             if not name.startswith(".") and not name.endswith(".zarr")
         ]
-        if depth >= max_depth:
+        if max_depth is not None and depth >= max_depth:
             directories.clear()
         for name in filenames:
             if name in names:
@@ -116,6 +123,31 @@ def discover_source_documents(dataset: Path, max_depth: int = 3) -> list[Path]:
                 if path != dataset / "README.toml":
                     documents.append(path)
     return sorted(documents)
+
+
+def infer_filename_evidence(files: list[str]) -> dict[str, Any]:
+    """Extract repeated, non-generic filename tokens as weak evidence."""
+    token_counts: dict[str, int] = {}
+    patterns: set[str] = set()
+    for relative_path in files:
+        name = Path(relative_path).stem
+        patterns.add(name)
+        for token in TOKEN_PATTERN.findall(name):
+            normalized = token.strip("-_ ").lower()
+            if len(normalized) < 3 or normalized in GENERIC_TOKENS:
+                continue
+            token_counts[normalized] = token_counts.get(normalized, 0) + 1
+    ranked = sorted(
+        token_counts,
+        key=lambda token: (-token_counts[token], token),
+    )
+    return {
+        "tokens": ranked[:30],
+        "repeated_tokens": [
+            token for token in ranked if token_counts[token] >= 2
+        ][:30],
+        "representative_patterns": sorted(patterns)[:20],
+    }
 
 
 def sample_csv(path: Path) -> dict[str, Any]:
@@ -202,16 +234,23 @@ def build_report(
     dataset: Path,
     max_zarr_stores: int,
     explicit_stores: list[Path] | None = None,
+    max_depth: int | None = None,
 ) -> dict[str, Any]:
     report: dict[str, Any] = {
         "dataset": str(dataset),
-        "inventory": discover_files(dataset, max_zarr_stores, explicit_stores),
+        "inventory": discover_files(
+            dataset, max_zarr_stores, explicit_stores, max_depth
+        ),
         "source_documents": [
-            str(path.relative_to(dataset)) for path in discover_source_documents(dataset)
+            str(path.relative_to(dataset))
+            for path in discover_source_documents(dataset, max_depth)
         ],
         "csv_samples": [],
         "zarr": [],
     }
+    report["filename_evidence"] = infer_filename_evidence(
+        report["inventory"]["supporting_files"]
+    )
     for relative_path in report["inventory"]["supporting_files"]:
         path = dataset / relative_path
         if path.suffix.lower() == ".csv":
@@ -230,21 +269,16 @@ def write_proposal(report: dict[str, Any]) -> Path:
     zarr_stores = report["inventory"]["zarr_stores"]
     supporting_files = report["inventory"]["supporting_files"]
     source_documents = report.get("source_documents", [])
-    if zarr_stores:
-        formats = ["Zarr"]
-    else:
-        suffix_counts: dict[str, int] = {}
-        for path in supporting_files:
-            suffix = Path(path).suffix.lstrip(".").lower()
-            if suffix:
-                format_name = FORMAT_NAMES.get(suffix, suffix.upper())
-                suffix_counts[format_name] = suffix_counts.get(format_name, 0) + 1
-        formats = [
-            suffix
-            for suffix, _ in sorted(
-                suffix_counts.items(), key=lambda item: (-item[1], item[0])
-            )[:1]
-        ]
+    suffix_counts: dict[str, int] = {"Zarr": len(zarr_stores)}
+    for path in supporting_files:
+        format_name = FORMAT_NAMES.get(Path(path).suffix.lstrip(".").lower())
+        if format_name:
+            suffix_counts[format_name] = suffix_counts.get(format_name, 0) + 1
+    formats = [name for name, _ in sorted(
+        ((name, count) for name, count in suffix_counts.items() if count),
+        key=lambda item: (-item[1], item[0]),
+    )[:3]]
+    keywords = report["filename_evidence"]["tokens"][:12]
     description = (
         "Description requires review against source documentation."
         if not source_documents
@@ -259,7 +293,7 @@ def write_proposal(report: dict[str, Any]) -> Path:
         f"description = {toml_string(description)}",
         "citation = \"\"",
         "manager = [\"\"]",
-        "keywords = []",
+        f"keywords = [{', '.join(toml_string(value) for value in keywords)}]",
         "license = \"unknown\"",
         "",
         "[details]",
@@ -268,6 +302,7 @@ def write_proposal(report: dict[str, Any]) -> Path:
         f"source_documents = [{', '.join(toml_string(path) for path in source_documents)}]",
         f"formats = [{', '.join(toml_string(value) for value in formats)}]",
         f"zarr_sources = [{', '.join(toml_string(item.get('source', 'unknown')) for item in report['zarr'])}]",
+        f"filename_evidence = {toml_string(json.dumps(report['filename_evidence']))}",
         "",
         "[publication]",
         "",
@@ -293,6 +328,12 @@ def main() -> int:
         help="Maximum number of Zarr stores to inspect (default: 3)",
     )
     parser.add_argument(
+        "--max-depth",
+        type=int,
+        default=None,
+        help="Optional directory-depth limit; recurse to all depths by default",
+    )
+    parser.add_argument(
         "--zarr-store",
         action="append",
         default=[],
@@ -309,6 +350,8 @@ def main() -> int:
         parser.error(f"dataset directory does not exist: {dataset}")
     if args.max_zarr_stores < 1:
         parser.error("--max-zarr-stores must be at least 1")
+    if args.max_depth is not None and args.max_depth < 0:
+        parser.error("--max-depth must be non-negative")
     if len(args.zarr_store) > 3:
         parser.error("--zarr-store may be supplied at most three times")
     explicit_stores = []
@@ -324,7 +367,9 @@ def main() -> int:
         if not store_path.is_dir() or not store_path.name.endswith(".zarr"):
             parser.error(f"Zarr store directory not found: {raw_path}")
         explicit_stores.append(store_path)
-    report = build_report(dataset, args.max_zarr_stores, explicit_stores or None)
+    report = build_report(
+        dataset, args.max_zarr_stores, explicit_stores or None, args.max_depth
+    )
     if args.proposal:
         proposal_path = write_proposal(report)
         print(f"proposal: {proposal_path}", file=sys.stderr)

@@ -72,12 +72,12 @@ python \
     --zarr-store data_from_mpi/ERA5Data.zarr \
     --zarr-store data_from_mpi/EventCube_ranked_pot0.01_ne0.1.zarr \
     --zarr-store deepextremes-minicubes/mc_10.00_50.09_1.1_20230611_0.zarr \
-    /net/data/deep_extremes > /tmp/deep_extremes_report.json
+    /path/to/dataset > /tmp/dataset_report.json
 ```
 
 Use `--zarr-store` up to three times to choose representative products. When
 `--proposal` is supplied, the tool writes a temporary evidence-backed
-`README.toml` proposal outside `/net/data` and prints its path to stderr. The
+`README.toml` proposal outside the dataset and prints its path to stderr. The
 JSON report is evidence for review; the tool never replaces an existing
 dataset `README.toml`. Keep the final README compact by publishing concise
 collection-level metadata rather than per-store paths, full variable dumps, or
