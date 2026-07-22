@@ -45,7 +45,7 @@ FORMAT_NAMES = {
     "zarr": "Zarr",
 }
 
-TOKEN_PATTERN = re.compile(r"[A-Za-z][A-Za-z0-9]*(?:[-_][A-Za-z0-9]+)*")
+TOKEN_PATTERN = re.compile(r"[A-Za-z][A-Za-z0-9]*")
 GENERIC_TOKENS = {
     "data", "dataset", "file", "files", "readme", "metadata", "version",
     "final", "latest", "copy", "temp", "tmp",
