@@ -1,7 +1,7 @@
-# Phaestos Dataset Documentation
+# Dataset Documentation
 
-Agent skills for inspecting datasets on the `phaestos` server and creating
-evidence-based `README.toml` documentation under `/net/data`.
+Agent skills for inspecting datasets and creating evidence-based `README.toml`
+documentation.
 
 ## Workflow
 
@@ -63,7 +63,7 @@ not traversed. Xarray is used for lazy inspection when possible; consolidated
 Zarr JSON metadata is used as a fallback for stores that the current backend
 cannot open.
 
-Run it on `phaestos` with the configured environment:
+Run it with the configured environment:
 
 ```bash
 python \
