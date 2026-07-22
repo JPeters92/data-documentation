@@ -50,6 +50,10 @@ GENERIC_TOKENS = {
     "data", "dataset", "file", "files", "readme", "metadata", "version",
     "final", "latest", "copy", "temp", "tmp",
 }
+KEYWORD_ACRONYMS = {
+    "cog": "COG", "dem": "DEM", "dsm": "DSM", "glo": "GLO",
+    "nc": "NetCDF", "swi": "SWI", "tif": "GeoTIFF", "hdf": "HDF",
+}
 
 
 def discover_files(
@@ -141,8 +145,9 @@ def infer_filename_evidence(files: list[str]) -> dict[str, Any]:
         token_counts,
         key=lambda token: (-token_counts[token], token),
     )
+    readable = [KEYWORD_ACRONYMS.get(token, token.capitalize()) for token in ranked]
     return {
-        "tokens": ranked[:30],
+        "tokens": readable[:30],
         "repeated_tokens": [
             token for token in ranked if token_counts[token] >= 2
         ][:30],
